@@ -1,5 +1,6 @@
 import React from 'react'
 import { Card } from 'antd';
+import CardMovie from '../card';
 
 import './app.css'
 import Rectangle36 from './Rectangle36.png';
@@ -37,6 +38,9 @@ const App = () => {
           </div>
           </div>
         </Card>
+        </li>
+        <li>
+          <CardMovie />
         </li>
       </ul>
     </div>
