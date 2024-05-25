@@ -5,56 +5,8 @@ li {
   padding-left: 0; /* Сдвигаем список влево */
  }
 
- .card {
-  width: 550px;
-  box-shadow: 1px 1px 10px #00000026;
-  border-radius: 0%;
-  
+ .app-content {
+  width: 90%;
+  margin: 0 auto;
+  padding: 50px 0;
  }
-
-.card__container {
-  font-family: 'Inter';
-  display: flex;
-  column-gap: 20px;
-  justify-content: flex-start;
-}
-
-.card__title h5 {
-  font-size: 25px;
-  line-height: 28px;
-  font-weight: 400;
-  margin: 1em 0;
-}
-
-.card__release {
-  font-size: 17px;
-  font-weight: 400;
-  line-height: 22px;
-  color: #827E7E;
-
-}
-
-.card__genre ul {
-  display: flex;
-  column-gap: 10px;
-}
-
-
-.card__genre li {
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 14.52px;
-  color: #000000A6;
-  border: 1px solid #D9D9D9;
-  border-radius: 8%;
-  padding: 5px;
-
-}
-
-.card__shortDescription {
-font-size: 15px;
-font-weight: 400;
-line-height: 22px;
-color: #000000;
-padding: 20px;
-}
