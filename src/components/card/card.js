@@ -4,7 +4,7 @@ import { Card } from 'antd'
 import './card.css'
 import Rectangle36 from './Rectangle36.png'
 
-const CardMovie = () => {
+const CardMovie = ({ title }) => {
   return (
     <Card className='card'
       styles={{
@@ -17,7 +17,7 @@ const CardMovie = () => {
         <img className='card__image' src={Rectangle36} alt='movie poster'/>
       <div className='card__info'>
         <div className='card__title'>
-          <h5>The way back</h5>
+          <h5>{ title }</h5>
         </div>
         <div className='card__release'>
           <p>March 5, 2020</p> 
