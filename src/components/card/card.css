@@ -2,7 +2,6 @@
   width: 550px;
   box-shadow: 1px 1px 10px #00000026;
   border-radius: 0%;
-  
  }
 
 .card__container {
@@ -10,6 +9,11 @@
   display: flex;
   column-gap: 20px;
   justify-content: flex-start;
+}
+
+.card__image {
+  width: 238px;
+  height: 357px;
 }
 
 .card__title h5 {
@@ -49,5 +53,5 @@ font-size: 15px;
 font-weight: 400;
 line-height: 22px;
 color: #000000;
-padding: 20px;
+margin: 20px 20px 20px 0;
 }

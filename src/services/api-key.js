@@ -33,11 +33,19 @@ export default class ServiceMovie {
 
   async getResource(text) {
     const queryURL = `${this.baseURL}search/movie?`
-    const res = await fetch(`${queryURL}&query=${text}`, this.options);
+    const res = await fetch(`${queryURL}query=${text}`, this.options);
     if (!res.ok) {
       throw new Error(`Could not fetch ${queryURL} received ${res.state}`);
     }
     return await res.json();
+  }
+
+  static getImages(poster_path) {
+    if (poster_path === null) {
+      return poster_path
+    }
+    return `https://image.tmdb.org/t/p/w500${poster_path}`
+    
   }
 }
 

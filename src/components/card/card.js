@@ -2,9 +2,10 @@ import React from 'react'
 import { Card } from 'antd'
 
 import './card.css'
-import Rectangle36 from './Rectangle36.png'
+import no_image from './no_image.png'
 
-const CardMovie = ({ title }) => {
+const CardMovie = ({ title, poster_path, description, release_date }) => {
+
   return (
     <Card className='card'
       styles={{
@@ -14,13 +15,15 @@ const CardMovie = ({ title }) => {
       }}
       >
       <div className='card__container'>
-        <img className='card__image' src={Rectangle36} alt='movie poster'/>
+        <img className='card__image'
+        src={poster_path === null ? no_image : poster_path}
+        alt='movie poster'/>
       <div className='card__info'>
         <div className='card__title'>
           <h5>{ title }</h5>
         </div>
         <div className='card__release'>
-          <p>March 5, 2020</p> 
+          <p>{ release_date }</p> 
         </div>
         <div className='card__genre'>
         <ul>
@@ -29,7 +32,7 @@ const CardMovie = ({ title }) => {
         </ul>
         </div>
         <div className='card__shortDescription'>
-        A former basketball all-star, who has lost his wife and family foundation in a struggle with addiction attempts to regain his soul  and salvation by becoming the coach of a disparate ethnically mixed high ...
+          { description }
         </div>
       </div>
       </div>
