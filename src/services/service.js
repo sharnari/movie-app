@@ -40,7 +40,7 @@ export default class ServiceMovie {
     return await res.json();
   }
 
-  static getImages(poster_path) {
+  static getImage(poster_path) {
     if (poster_path === null) {
       return poster_path
     }
@@ -48,12 +48,3 @@ export default class ServiceMovie {
     
   }
 }
-
-// getResource('https://api.themoviedb.org/3/movie/157336?api_key=3df31dd598e29136b5eda03d5ca6df8e').then(
-//   (body) => {
-//     console.log(body)
-//   }
-// )
-// .catch((err) => {
-//   console.log(err)
-// })

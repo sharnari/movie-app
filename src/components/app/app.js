@@ -2,7 +2,7 @@ import { React, Component } from 'react'
 import { Flex, Spin } from 'antd'
 import { parse, format } from 'date-fns'
 import CardMovie from '../card'
-import MovieService from "../../services/api-key"
+import MovieService from "../../services/service"
 
 import './app.css'
 
@@ -20,6 +20,7 @@ export default class App extends Component {
         }
       ],
       loading: true,
+      error: false,
     }
   }
 
@@ -36,6 +37,12 @@ export default class App extends Component {
     return `${desc.slice(0, maxLength - 3)}...`;
   }
 
+  onError = (err) => {
+    this.setState({
+      error: true,
+      loading: false,
+    })
+  }
   /*
   * 
   */
@@ -48,7 +55,7 @@ export default class App extends Component {
         movieSlices.push({ // Заполняем этот список
           id: index,
           title: element.title,
-          poster_path: MovieService.getImages(element.poster_path),
+          poster_path: MovieService.getImage(element.poster_path),
           description: element.overview,
           release_date: element.release_date,
         })
@@ -60,7 +67,7 @@ export default class App extends Component {
          }
       })
     }).catch((error) => {
-      console.log(error)
+      this.onError()
     })
   }
 
@@ -97,16 +104,34 @@ export default class App extends Component {
   }
 
   render () {
-    if (this.state.loading) {
+    const { loading, /*error*/ } = this.state
+    // const hasData = !(loading || error);
+    // const loader = loading ? <div className='loading-page'><Spin size="large" /></div> : null
+    // const errorMessage = error ? <ErrorNotification /> : null
+    if (loading) {
       return <div className='loading-page'><Spin size="large" /></div>
     }
     const listOfMovie = this.buildMoviesLayout()
     return (
-      <div className='app-content'>
-        <Flex wrap gap={50} align="align" justify='center'>
-          {listOfMovie}
-        </Flex>
-      </div>
+      <MoviesView movies={ listOfMovie }/>
     )
   }
+}
+
+// const ErrorNotification = () => {
+//   return (
+//     <React.Fragment>
+//       <p>OOOPS! Network error</p>
+//     </React.Fragment>
+//   )
+// }
+
+const MoviesView = ({ movies }) => {
+  return (
+    <div className='app-content'>
+        <Flex wrap gap={50} align="align" justify='center'>
+          { movies }
+        </Flex>
+      </div>
+  )
 }
