@@ -1,5 +1,5 @@
 import { React, Component } from 'react'
-import { Flex } from 'antd'
+import { Flex, Spin } from 'antd'
 import { parse, format } from 'date-fns'
 import CardMovie from '../card'
 import MovieService from "../../services/api-key"
@@ -65,7 +65,21 @@ export default class App extends Component {
   }
 
   /*
-  * 
+  * args: id 
+  * return: string
+  * convert one string date format to another string date format
+  * expample: "2011-02-10" to "February 10, 2011"
+  */
+  preparingDate = (id) => {
+    const newFormatOfDate = format(
+      parse(this.state.MovieData[id].release_date, 'yyyy-MM-dd', new Date()), 'MMMM d, yyyy'
+    );
+    return newFormatOfDate;
+  }
+
+  /*
+  * args:
+  * return: JSX array of CardMovie elements
   */
   buildMoviesLayout = () => {
     // Задача, поменять в верстке названия фильмов на полученые отсервера:
@@ -76,7 +90,7 @@ export default class App extends Component {
         key={i}
         poster_path={this.state.MovieData[i].poster_path}
         description={this.truncateDescription(this.state.MovieData[i].description)}
-        release_date={format(parse(this.state.MovieData[i].release_date, 'yyyy-MM-dd', new Date()), 'MMMM d, yyyy')}
+        release_date={this.preparingDate(i)}
         />) // Список заполнен + ключ
     }
     return listOfMovies
@@ -84,7 +98,7 @@ export default class App extends Component {
 
   render () {
     if (this.state.loading) {
-      return <div>Loading...</div>
+      return <div className='loading-page'><Spin size="large" /></div>
     }
     const listOfMovie = this.buildMoviesLayout()
     return (
