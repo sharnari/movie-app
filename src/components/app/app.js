@@ -2,7 +2,9 @@ import { React, Component } from 'react'
 import { Flex, Spin } from 'antd'
 import { parse, format } from 'date-fns'
 import CardMovie from '../card'
+import InternetDown from '../internet-down'
 import MovieService from "../../services/service"
+import DataEmpty from '../no-data'
 
 import './app.css'
 
@@ -21,9 +23,13 @@ export default class App extends Component {
       ],
       loading: true,
       error: false,
+      empty: false,
     }
   }
 
+  /*
+  * 
+  */
   componentDidMount() {
     this.getMoviesFromServer()
   }
@@ -34,22 +40,40 @@ export default class App extends Component {
     if (desc.length <= maxLength) {
       return desc;
     }
-    return `${desc.slice(0, maxLength - 3)}...`;
+    const words = desc.split(' ');
+    let truncatedDesc = '';
+    for (let word of words) {
+      if ((truncatedDesc + word).length + 1 > maxLength) {
+        break;
+      }
+      truncatedDesc += (truncatedDesc ? ' ' : '') + word;
+    }
+    return truncatedDesc + ' ...';
   }
 
   onError = (err) => {
     this.setState({
       error: true,
       loading: false,
+      empty: true,
     })
   }
+  
   /*
   * 
   */
   getMoviesFromServer = () => {
     const listInfoMovies = new MovieService()
-    listInfoMovies.getResource("return").then((response) => { // отправляем запрос на поиск 'return'
-      const movies = response.results // получаем тело ответа со списком фильмов
+    listInfoMovies.getResource("anime").then((response) => { // отправляем запрос на поиск 'return' ----------------------------------
+      if (response.results.length === 0) {
+        this.setState(() => {
+          return {
+            empty: true,
+            loading: false,
+          }
+       })
+      }
+      const movies = response.results// получаем тело ответа со списком фильмов
       let movieSlices = [] // Список для хранения отдельных даных
       movies.forEach((element, index) => {
         movieSlices.push({ // Заполняем этот список
@@ -78,8 +102,10 @@ export default class App extends Component {
   * expample: "2011-02-10" to "February 10, 2011"
   */
   preparingDate = (id) => {
+    const release = this.state.MovieData[id].release_date
+    if (release === "") { return "no date"}
     const newFormatOfDate = format(
-      parse(this.state.MovieData[id].release_date, 'yyyy-MM-dd', new Date()), 'MMMM d, yyyy'
+      parse(release, 'yyyy-MM-dd', new Date()), 'MMMM d, yyyy'
     );
     return newFormatOfDate;
   }
@@ -89,8 +115,7 @@ export default class App extends Component {
   * return: JSX array of CardMovie elements
   */
   buildMoviesLayout = () => {
-    // Задача, поменять в верстке названия фильмов на полученые отсервера:
-    const listOfMovies = [] // Список карточек для фильмов
+    const listOfMovies = []
     for(let i = 0; i < 6; i++ ) {
       listOfMovies.push(<CardMovie
         title={this.state.MovieData[i].title}
@@ -104,27 +129,20 @@ export default class App extends Component {
   }
 
   render () {
-    const { loading, /*error*/ } = this.state
-    // const hasData = !(loading || error);
-    // const loader = loading ? <div className='loading-page'><Spin size="large" /></div> : null
-    // const errorMessage = error ? <ErrorNotification /> : null
+    const { loading, error, empty } = this.state
     if (loading) {
-      return <div className='loading-page'><Spin size="large" /></div>
+      return <LoadingPageView />
+    }
+    if (error) {
+      return <InternetDown />
+    }
+    if (empty) {
+      return <DataEmpty />
     }
     const listOfMovie = this.buildMoviesLayout()
-    return (
-      <MoviesView movies={ listOfMovie }/>
-    )
+    return <MoviesView movies={listOfMovie} /> 
   }
 }
-
-// const ErrorNotification = () => {
-//   return (
-//     <React.Fragment>
-//       <p>OOOPS! Network error</p>
-//     </React.Fragment>
-//   )
-// }
 
 const MoviesView = ({ movies }) => {
   return (
@@ -134,4 +152,8 @@ const MoviesView = ({ movies }) => {
         </Flex>
       </div>
   )
+}
+
+const LoadingPageView = () => {
+  return <div className='loading-page'><Spin size="large" /></div>
 }
