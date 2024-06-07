@@ -27,17 +27,18 @@ export default class ServiceMovie {
     method: 'GET',
     headers: {
       accept: 'application/json',
-      Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZGYzMWRkNTk4ZTI5MTM2YjVlZGEwM2Q1Y2E2ZGY4ZSIsInN1YiI6IjY2NTBkNmQ1ZWU4MmI0NWViMjI2Yjg2NiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.n3WGPv0IepwZRmqDkmUjjq4-D7VjSA-yIOYm10PNBXA'
-    }
-  };
+      Authorization:
+        'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZGYzMWRkNTk4ZTI5MTM2YjVlZGEwM2Q1Y2E2ZGY4ZSIsInN1YiI6IjY2NTBkNmQ1ZWU4MmI0NWViMjI2Yjg2NiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.n3WGPv0IepwZRmqDkmUjjq4-D7VjSA-yIOYm10PNBXA',
+    },
+  }
 
   async getResource(text) {
     const queryURL = `${this.baseURL}search/movie?`
-    const res = await fetch(`${queryURL}query=${text}`, this.options);
+    const res = await fetch(`${queryURL}query=${text}`, this.options)
     if (!res.ok) {
-      throw new Error(`Could not fetch ${queryURL} received ${res.state}`);
+      throw new Error(`Could not fetch ${queryURL} received ${res.state}`)
     }
-    return await res.json();
+    return await res.json()
   }
 
   static getImage(poster_path) {
@@ -45,6 +46,5 @@ export default class ServiceMovie {
       return poster_path
     }
     return `https://image.tmdb.org/t/p/w500${poster_path}`
-    
   }
 }

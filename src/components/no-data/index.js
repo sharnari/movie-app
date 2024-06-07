@@ -1,3 +1,3 @@
-import DataEmpty from "./no-data";
+import DataEmpty from './no-data'
 
 export default DataEmpty

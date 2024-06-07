@@ -1,3 +1,3 @@
-import InternetDown from "./internet-down";
+import InternetDown from './internet-down'
 
-export default InternetDown;
+export default InternetDown

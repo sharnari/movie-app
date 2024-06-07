@@ -1,3 +1,3 @@
-import MovieService from "api-key.js"
+import MovieService from './service'
 
 export default MovieService
