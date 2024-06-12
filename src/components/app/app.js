@@ -1,11 +1,16 @@
 import { React, Component } from 'react'
-import { Flex, Spin } from 'antd'
 import { parse, format } from 'date-fns'
+import debounce from 'lodash/debounce'
 
 import CardMovie from '../card'
 import InternetDown from '../internet-down'
 import MovieService from '../../services/service'
 import DataEmpty from '../no-data'
+import Search from '../search'
+import Selector from '../menu'
+import MoviesView from '../view-list'
+import LoadingPageView from '../loading-view'
+import Leaf from '../pagination'
 
 import './app.css'
 
@@ -16,16 +21,18 @@ export default class App extends Component {
       MovieData: [
         {
           id: 0,
-          title: 'Returns',
-          poster_path: 'no_image',
-          description: 'no description',
-          release_date: '0',
+          title: '',
+          poster_path: '',
+          description: '',
+          release_date: '',
         },
       ],
       loading: true,
       error: false,
       empty: false,
+      searchQuery: '',
     }
+    this.debouncedGetMovies = debounce(this.getMoviesFromServer, 1000)
   }
 
   /*
@@ -63,10 +70,15 @@ export default class App extends Component {
   /*
    *
    */
-  getMoviesFromServer = () => {
+  getMoviesFromServer = (query = 'return', page) => {
+    this.setState({
+      loading: true,
+      error: false,
+      empty: false,
+    })
     const listInfoMovies = new MovieService()
     listInfoMovies
-      .getResource('anime')
+      .getResource(query, page)
       .then((response) => {
         // отправляем запрос на поиск 'return' ----------------------------------
         if (response.results.length === 0) {
@@ -108,7 +120,7 @@ export default class App extends Component {
    * expample: "2011-02-10" to "February 10, 2011"
    */
   preparingDate = (id) => {
-    const release = this.state.MovieData[id].release_date
+    const release = this.state.MovieData[id]?.release_date
     if (release === '') {
       return 'no date'
     }
@@ -121,51 +133,52 @@ export default class App extends Component {
    * return: JSX array of CardMovie elements
    */
   buildMoviesLayout = () => {
-    const listOfMovies = []
-    for (let i = 0; i < 6; i++) {
-      listOfMovies.push(
-        <CardMovie
-          title={this.state.MovieData[i].title}
-          key={i}
-          poster_path={this.state.MovieData[i].poster_path}
-          description={this.truncateDescription(this.state.MovieData[i].description)}
-          release_date={this.preparingDate(i)}
-        />
-      ) // Список заполнен + ключ
+    const { MovieData } = this.state
+    return MovieData.slice(0, 6).map((movie, i) => (
+      <CardMovie
+        key={i}
+        title={movie.title}
+        poster_path={movie.poster_path}
+        description={this.truncateDescription(movie.description)}
+        release_date={this.preparingDate(i)}
+      />
+    ))
+  }
+
+  handleSearchChange = (event) => {
+    this.setState({ searchQuery: event.target.value }, () => {
+      this.debouncedGetMovies(this.state.searchQuery)
+    })
+  }
+
+  selectView = () => {
+    const { loading, empty, MovieData } = this.state
+    if (loading) {
+      return <LoadingPageView />
+    } else if (empty || MovieData.length === 0) {
+      return <DataEmpty />
+    } else {
+      const listOfMovie = this.buildMoviesLayout()
+      return <MoviesView movies={listOfMovie} />
     }
-    return listOfMovies
+  }
+
+  changePage = (page) => {
+    console.log(`${page}`)
   }
 
   render() {
-    const { loading, error, empty } = this.state
-    if (loading) {
-      return <LoadingPageView />
-    }
+    const { error } = this.state
     if (error) {
       return <InternetDown />
     }
-    if (empty) {
-      return <DataEmpty />
-    }
-    const listOfMovie = this.buildMoviesLayout()
-    return <MoviesView movies={listOfMovie} />
+    return (
+      <div className="app-content">
+        <Selector />
+        <Search handleSearchChange={this.handleSearchChange} value={this.state.searchQuery} />
+        {this.selectView()}
+        <Leaf onChangePage={(page) => this.changePage()} />
+      </div>
+    )
   }
-}
-
-const MoviesView = ({ movies }) => {
-  return (
-    <div className="app-content">
-      <Flex wrap gap={50} align="align" justify="center">
-        {movies}
-      </Flex>
-    </div>
-  )
-}
-
-const LoadingPageView = () => {
-  return (
-    <div className="loading-page">
-      <Spin size="large" />
-    </div>
-  )
 }

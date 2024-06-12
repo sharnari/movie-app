@@ -3,11 +3,11 @@ import { Empty } from 'antd'
 import './no-data.css'
 
 const DataEmpty = () => (
-  <div className="atCenter">
+  <div className="atCenter--no-data">
     <Empty
       image="https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg"
       imageStyle={{
-        height: 120,
+        height: 150,
       }}
       description={<span>Nothing was found for your query.</span>}
     ></Empty>

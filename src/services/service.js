@@ -32,9 +32,9 @@ export default class ServiceMovie {
     },
   }
 
-  async getResource(text) {
+  async getResource(text, page = 1) {
     const queryURL = `${this.baseURL}search/movie?`
-    const res = await fetch(`${queryURL}query=${text}`, this.options)
+    const res = await fetch(`${queryURL}query=${text}&page=${page}`, this.options)
     if (!res.ok) {
       throw new Error(`Could not fetch ${queryURL} received ${res.state}`)
     }

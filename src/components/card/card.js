@@ -2,7 +2,7 @@ import React from 'react'
 import { Card } from 'antd'
 
 import './card.css'
-import no_image from './no_image.png'
+import no_image from './no_image.jpg'
 
 const CardMovie = ({ title, poster_path, description, release_date }) => {
   return (
@@ -15,7 +15,9 @@ const CardMovie = ({ title, poster_path, description, release_date }) => {
       }}
     >
       <div className="card__container">
-        <img className="card__image" src={poster_path === null ? no_image : poster_path} alt="movie poster" />
+        <div className="card__image">
+          <img src={poster_path === null ? no_image : poster_path} alt="movie poster" />
+        </div>
         <div className="card__info">
           <div className="card__title">
             <h5>{title}</h5>

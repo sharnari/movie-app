@@ -1,0 +1,13 @@
+.loading-page {
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+}
+
+.atCenter--loading {
+  display: flex;
+  height: 75vh;
+  justify-content: center;
+  align-items: center;
+}

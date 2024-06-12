@@ -1,0 +1,11 @@
+.size {
+  max-width: 100%;
+}
+.atCenterX {
+  display: flex;
+  justify-content: center;
+}
+
+.margin-bM {
+  margin-bottom: 40px;
+}
