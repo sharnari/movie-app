@@ -3,9 +3,9 @@ import { Pagination } from 'antd'
 
 import './pagination-view.css'
 
-const Leaf = ({ changePage }) => (
+const Leaf = ({ onChange, total_pages, currentPage }) => (
   <div className="atCenterX margin-bM">
-    <Pagination onChangePage={changePage} defaultCurrent={1} total={50} />
+    <Pagination onChange={onChange} current={currentPage} total={total_pages} showSizeChanger={false} />
   </div>
 )
 

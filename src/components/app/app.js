@@ -31,18 +31,27 @@ export default class App extends Component {
       error: false,
       empty: false,
       searchQuery: '',
+      total_pages: 1,
+      currentPage: 1,
     }
     this.debouncedGetMovies = debounce(this.getMoviesFromServer, 1000)
   }
+  totalMovie = 'return'
 
   /*
-   *
+   * Executes a request to the server, immediately after the component is rendered
    */
   componentDidMount() {
-    this.getMoviesFromServer()
+    const totalMovie = this.totalMovie
+    this.getMoviesFromServer(this.totalMovie)
+    this.setState({
+      searchQuery: totalMovie,
+    })
   }
   /*
-   *
+   * args: desc(string), maxLength(number)
+   * return: string
+   * trim text - desc by words up to maxLength characters
    */
   truncateDescription(desc, maxLength = 205) {
     if (desc.length <= maxLength) {
@@ -59,6 +68,9 @@ export default class App extends Component {
     return truncatedDesc + ' ...'
   }
 
+  /*
+   * configures the error state
+   */
   onError = () => {
     this.setState({
       error: true,
@@ -68,9 +80,10 @@ export default class App extends Component {
   }
 
   /*
-   *
+   * args: query, page
+   * makes a request to the server, filters the data and updates the state of the component
    */
-  getMoviesFromServer = (query = 'return', page) => {
+  getMoviesFromServer = (query = this.state.searchQuery, page = 1) => {
     this.setState({
       loading: true,
       error: false,
@@ -89,6 +102,7 @@ export default class App extends Component {
             }
           })
         }
+        const total_pages = response.total_pages
         const movies = response.results // получаем тело ответа со списком фильмов
         let movieSlices = [] // Список для хранения отдельных даных
         movies.forEach((element, index) => {
@@ -105,6 +119,8 @@ export default class App extends Component {
           return {
             MovieData: movieSlices,
             loading: false,
+            total_pages: total_pages,
+            currentPage: page,
           }
         })
       })
@@ -114,8 +130,8 @@ export default class App extends Component {
   }
 
   /*
-   * args: id
-   * return: string
+   * args: id(number)
+   * return: string of date(string)
    * convert one string date format to another string date format
    * expample: "2011-02-10" to "February 10, 2011"
    */
@@ -129,8 +145,8 @@ export default class App extends Component {
   }
 
   /*
-   * args:
    * return: JSX array of CardMovie elements
+   * builds an array with JSX cards
    */
   buildMoviesLayout = () => {
     const { MovieData } = this.state
@@ -145,12 +161,21 @@ export default class App extends Component {
     ))
   }
 
+  /*
+   * args: event
+   * updates the query in the state of the component
+   */
   handleSearchChange = (event) => {
     this.setState({ searchQuery: event.target.value }, () => {
       this.debouncedGetMovies(this.state.searchQuery)
     })
   }
 
+  /*
+   * args: event
+   * return: JSX element
+   * selects the layout to be called on the page
+   */
   selectView = () => {
     const { loading, empty, MovieData } = this.state
     if (loading) {
@@ -164,20 +189,25 @@ export default class App extends Component {
   }
 
   changePage = (page) => {
-    console.log(`${page}`)
+    const query = this.state.searchQuery
+    this.getMoviesFromServer(query, page)
   }
 
   render() {
-    const { error } = this.state
+    const { error, total_pages, currentPage } = this.state
     if (error) {
       return <InternetDown />
     }
     return (
       <div className="app-content">
         <Selector />
-        <Search handleSearchChange={this.handleSearchChange} value={this.state.searchQuery} />
+        <Search
+          handleSearchChange={this.handleSearchChange}
+          value={this.state.searchQuery}
+          defaultValue={this.totalMovie}
+        />
         {this.selectView()}
-        <Leaf onChangePage={(page) => this.changePage()} />
+        <Leaf onChange={(page) => this.changePage(page)} total_pages={total_pages} currentPage={currentPage} />
       </div>
     )
   }
