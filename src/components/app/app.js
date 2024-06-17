@@ -48,6 +48,15 @@ export default class App extends Component {
       searchQuery: totalMovie,
     })
   }
+
+  /*
+   *
+   *
+   */
+  componentWillUnmount() {
+    this.debouncedGetMovies.cancel()
+  }
+
   /*
    * args: desc(string), maxLength(number)
    * return: string
