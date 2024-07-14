@@ -1,4 +1,4 @@
-import { React, Component } from 'react'
+import { Component } from 'react'
 import { parse, format } from 'date-fns'
 import debounce from 'lodash/debounce'
 
@@ -11,6 +11,8 @@ import Selector from '../menu'
 import MoviesView from '../view-list'
 import LoadingPageView from '../loading-view'
 import Leaf from '../pagination'
+import ErrorAlert from '../error-alert'
+import { Provider } from '../../provider/provider'
 
 import './app.css'
 
@@ -27,25 +29,41 @@ export default class App extends Component {
           release_date: '',
         },
       ],
+      tabItem: [
+        {
+          label: 'Search',
+          key: '1',
+        },
+        {
+          label: 'Rated',
+          key: '2',
+        },
+      ],
+      rated: false,
       loading: true,
       error: false,
       empty: false,
       searchQuery: '',
       total_pages: 1,
       currentPage: 1,
+      islistRatedMovie: false,
     }
     this.debouncedGetMovies = debounce(this.getMoviesFromServer, 1000)
+    this.listInfoMovies = new MovieService()
   }
-  totalMovie = 'return'
 
   /*
    * Executes a request to the server, immediately after the component is rendered
    */
   componentDidMount() {
-    const totalMovie = this.totalMovie
-    this.getMoviesFromServer(this.totalMovie)
+    const movieName = this.state.searchQuery
+    this.listInfoMovies.getGuestSession().then((res) => {
+      this.guesSessId = res['guest_session_id']
+      console.log(this.guesSessId)
+    }) // получаем результат с guest_session_id
+    this.getMoviesFromServer(movieName)
     this.setState({
-      searchQuery: totalMovie,
+      searchQuery: movieName,
     })
   }
 
@@ -62,7 +80,7 @@ export default class App extends Component {
    * return: string
    * trim text - desc by words up to maxLength characters
    */
-  truncateDescription(desc, maxLength = 205) {
+  truncateDescription(desc, maxLength = 180) {
     if (desc.length <= maxLength) {
       return desc
     }
@@ -98,8 +116,7 @@ export default class App extends Component {
       error: false,
       empty: false,
     })
-    const listInfoMovies = new MovieService()
-    listInfoMovies
+    this.listInfoMovies
       .getResource(query, page)
       .then((response) => {
         // отправляем запрос на поиск 'return' ----------------------------------
@@ -135,6 +152,40 @@ export default class App extends Component {
       })
       .catch(() => {
         this.onError()
+      })
+  }
+
+  getShortRatedMovies = () => {
+    console.log(this.guesSessId)
+    this.listInfoMovies
+      .getMyRatedMovies(this.guesSessId)
+      .then((res) => {
+        const total_pages = res.total_pages
+        const movies = res.results
+        console.log(res)
+        const movieSlices = []
+        movies.forEach((element, index) => {
+          movieSlices.push({
+            id: index,
+            title: element.title,
+            poster_path: MovieService.getImage(element.poster_path),
+            description: element.overview,
+            release_date: element.release_date,
+            rate: element['vote_average'].tofixed(1),
+            myRate: element.rating,
+          })
+        })
+        this.setState(() => {
+          return {
+            MovieData: movieSlices,
+            loading: false,
+            total_pages: total_pages,
+            currentPage: 1,
+          }
+        })
+      })
+      .catch(() => {
+        return <ErrorAlert />
       })
   }
 
@@ -193,7 +244,7 @@ export default class App extends Component {
       return <DataEmpty />
     } else {
       const listOfMovie = this.buildMoviesLayout()
-      return <MoviesView movies={listOfMovie} />
+      return <MoviesView style={{ flex: 1 }} movies={listOfMovie} />
     }
   }
 
@@ -202,22 +253,49 @@ export default class App extends Component {
     this.getMoviesFromServer(query, page)
   }
 
+  switchMenu = (key) => {
+    if (key === '2') {
+      this.setState({
+        rated: true,
+        MovieData: [],
+        total_pages: 1,
+        currentPage: 1,
+      })
+      this.getShortRatedMovies()
+    } else {
+      this.setState({
+        rated: false,
+      })
+      this.getMoviesFromServer(this.state.searchQuery, 1)
+    }
+  }
+
   render() {
-    const { error, total_pages, currentPage } = this.state
+    const { error, total_pages, /*currentPage,*/ tabItem, rated, islistRatedMovie } = this.state
     if (error) {
       return <InternetDown />
     }
     return (
-      <div className="app-content">
-        <Selector />
-        <Search
-          handleSearchChange={this.handleSearchChange}
-          value={this.state.searchQuery}
-          defaultValue={this.totalMovie}
-        />
-        {this.selectView()}
-        <Leaf onChange={(page) => this.changePage(page)} total_pages={total_pages} currentPage={currentPage} />
-      </div>
+      <Provider value={this.state.currentPage}>
+        <div className="app-content">
+          <Selector item={tabItem} onChange={this.switchMenu} />
+          {rated ? (
+            islistRatedMovie ? (
+              <></>
+            ) : (
+              <ErrorAlert className="alert-message" />
+            )
+          ) : (
+            <Search
+              handleSearchChange={this.handleSearchChange}
+              value={this.state.searchQuery}
+              defaultValue={this.state.searchQuery}
+            />
+          )}
+          {this.selectView()}
+          <Leaf onChange={(page) => this.changePage(page)} total_pages={total_pages} /*currentPage={currentPage}*/ />
+        </div>
+      </Provider>
     )
   }
 }

@@ -1,5 +1,8 @@
 import React from 'react'
 import { Card } from 'antd'
+import PropTypes from 'prop-types'
+
+import RateMovie from '../rate-movies'
 
 import './card.css'
 import no_image from './no_image.jpg'
@@ -32,6 +35,9 @@ const CardMovie = ({ title, poster_path, description, release_date }) => {
             </ul>
           </div>
           <div className="card__shortDescription">{description}</div>
+          <div className="rate">
+            <RateMovie />
+          </div>
         </div>
       </div>
     </Card>
@@ -39,3 +45,10 @@ const CardMovie = ({ title, poster_path, description, release_date }) => {
 }
 
 export default CardMovie
+
+CardMovie.propTypes = {
+  title: PropTypes.string.isRequired,
+  poster_path: PropTypes.oneOfType([PropTypes.string, PropTypes.oneOf([null])]).isRequired,
+  description: PropTypes.string.isRequired,
+  release_date: PropTypes.string,
+}

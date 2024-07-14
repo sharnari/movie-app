@@ -6,8 +6,10 @@ li {
  }
 
  .app-content {
+  display: flex;
+  flex-direction: column;
   width: 90%;
   margin: 0 auto;
-  padding: 0 0;
+  padding: 0;
+  min-height: 100vh;
  }
-
