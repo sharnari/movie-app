@@ -1,4 +1,5 @@
-import { createContext } from 'react'
+import React from 'react'
 
-const { Provider, Consumer } = createContext()
-export { Provider, Consumer }
+const GenreContext = React.createContext()
+
+export default GenreContext

@@ -1,24 +1,3 @@
-// export default class MovieService {
-//   API_KEY = '3df31dd598e29136b5eda03d5ca6df8e'
-//   options = {
-//     method: 'GET',
-//     headers: {
-//       accept: 'application/json',
-//     },
-//   };
-//   baseUrl = 'https://api.themoviedb.org/3';
-
-//   async getResource(searchText, page = 1) {
-//     const response = await fetch(
-//       `${this.baseUrl}/search/movie?api_key=${this.API_KEY}&query=${searchText}&page=${page}`,
-//       this.options);
-//     if (!response.ok) {
-//       throw new Error(`could not featch, received ${response.status}`);
-//     }
-//     return await response.json();
-//   }
-// }
-
 export default class MovieService {
   baseURL = 'https://api.themoviedb.org/3/'
   API_KEY = '3df31dd598e29136b5eda03d5ca6df8e'
@@ -32,12 +11,12 @@ export default class MovieService {
       Authorization: `Bearer ${this.API_TOKEN}`,
     },
   }
-  // https://developers.themoviedb.org/3/authentication/create-guest-session
+
   async getGuestSession() {
     const queryURL = `${this.baseURL}authentication/guest_session/new?api_key=${this.API_KEY}`
     const res = await fetch(`${queryURL}`, this.options)
     if (!res.ok) {
-      throw new Error(`Could not fetch ${queryURL} received ${res.state}`)
+      throw new Error(`Could not fetch ${queryURL} received ${res.status}`)
     }
     return await res.json()
   }
@@ -46,7 +25,7 @@ export default class MovieService {
     const queryURL = `${this.baseURL}search/movie?`
     const res = await fetch(`${queryURL}query=${text}&page=${page}`, this.options)
     if (!res.ok) {
-      throw new Error(`Could not fetch ${queryURL} received ${res.state}`)
+      throw new Error(`Could not fetch ${queryURL} received ${res.status}`)
     }
     return await res.json()
   }
@@ -57,13 +36,44 @@ export default class MovieService {
     }
     return `https://image.tmdb.org/t/p/w500${poster_path}`
   }
-  // https://developers.themoviedb.org/3/guest-sessions/get-guest-session-rated-movies
+
   async getMyRatedMovies(guest_session_id) {
     const queryURL = `${this.baseURL}guest_session/${guest_session_id}/rated/movies?language=en-US&page=1&sort_by=created_at.asc`
     const res = await fetch(queryURL, this.options)
     if (!res.ok) {
-      throw new Error(`Could not fetch ${queryURL} received ${res.state}`)
+      throw new Error(`Could not fetch ${queryURL} received ${res.status}`)
     }
     return await res.json()
   }
+
+  async setRate(idMovie, rate, keyGuestSession) {
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json;charset=utf-8',
+        Authorization: `Bearer ${this.API_TOKEN}`,
+      },
+      body: JSON.stringify({ value: rate }),
+    }
+    const res = await fetch(`${this.baseURL}movie/${idMovie}/rating?guest_session_id=${keyGuestSession}`, options)
+    const returnData = await res.json()
+    return returnData
+  }
+
+  async getGenre() {
+    const res = await fetch(`${this.baseURL}/genre/movie/list?language=en`, this.options)
+    const allGenres = await res.json()
+    return allGenres
+  }
+
+  saveGenres(res = []) {
+    this.genres = res
+  }
 }
+// const guest = new MovieService()
+// guest.getGuestSession().then((res) => {
+//   guest.setRate(15,10, res.guest_session_id).then((res) => {
+//     console.log(res)
+//   })
+// })

@@ -17,6 +17,7 @@
  .card__info {
   display: flex;
   flex-direction: column;
+  width: 100%;
  }
 
  .card__container {
@@ -27,6 +28,11 @@
   max-height: 100%;
 }
 
+.row {
+  display: flex;
+  justify-content: space-between;
+}
+
 
 .card__image img {
   width: calc(238px * var(--card-scale));
@@ -34,17 +40,29 @@
 }
 
 .card__title h5 {
-  font-size: calc(24px * var(--card-scale));
-  line-height: calc(31px * var(--card-scale));
+  font-size: calc(20px * var(--card-scale));
+  line-height: calc(30px * var(--card-scale));
   font-weight: 400;
   margin: calc(0.4em * var(--card-scale)) 0;
-  margin-bottom: 0
+  margin-bottom: 0;
+}
+
+.rated {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid;
+  flex: 0 0 auto;
+  margin: 4px 4px 4px 6px;
 }
 
 .card__release {
-  font-size: calc(19px * var(--card-scale));
+  font-size: calc(15px * var(--card-scale));
   font-weight: 400;
-  line-height: calc(18px * var(--card-scale));
+  line-height: calc(17px * var(--card-scale));
   color: #827E7E;
 
 }
@@ -52,17 +70,18 @@
 .card__genre ul {
   display: flex;
   gap: calc(11px * var(--card-scale));
+  margin: 0;
 }
 
 
 .card__genre li {
-  font-size: calc(16px * var(--card-scale));
+  font-size: calc(14px * var(--card-scale));
   font-weight: 400;
-  line-height: calc(14.52px * var(--card-scale));
+  line-height: calc(14px * var(--card-scale));
   color: #000000A6;
   border: 1px solid #D9D9D9;
   border-radius: 8%;
-  padding: calc(5px * var(--card-scale));
+  padding: calc(4px * var(--card-scale));
 
 }
 

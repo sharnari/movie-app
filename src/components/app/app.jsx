@@ -12,7 +12,7 @@ import MoviesView from '../view-list'
 import LoadingPageView from '../loading-view'
 import Leaf from '../pagination'
 import ErrorAlert from '../error-alert'
-import { Provider } from '../../provider/provider'
+import GenreContext from '../../provider/provider'
 
 import './app.css'
 
@@ -29,6 +29,7 @@ export default class App extends Component {
           release_date: '',
         },
       ],
+      MovieDataRated: [],
       tabItem: [
         {
           label: 'Search',
@@ -47,6 +48,8 @@ export default class App extends Component {
       total_pages: 1,
       currentPage: 1,
       islistRatedMovie: false,
+      guesSessId: null,
+      genres: null,
     }
     this.debouncedGetMovies = debounce(this.getMoviesFromServer, 1000)
     this.listInfoMovies = new MovieService()
@@ -58,19 +61,22 @@ export default class App extends Component {
   componentDidMount() {
     const movieName = this.state.searchQuery
     this.listInfoMovies.getGuestSession().then((res) => {
-      this.guesSessId = res['guest_session_id']
-      console.log(this.guesSessId)
-    }) // получаем результат с guest_session_id
-    this.getMoviesFromServer(movieName)
-    this.setState({
-      searchQuery: movieName,
+      this.setState(
+        {
+          guesSessId: res['guest_session_id'],
+        },
+        () => {
+          this.getMoviesFromServer(movieName)
+        }
+      )
+    })
+    this.listInfoMovies.getGenre().then((res) => {
+      this.setState({
+        genres: res.genres,
+      })
     })
   }
 
-  /*
-   *
-   *
-   */
   componentWillUnmount() {
     this.debouncedGetMovies.cancel()
   }
@@ -119,7 +125,7 @@ export default class App extends Component {
     this.listInfoMovies
       .getResource(query, page)
       .then((response) => {
-        // отправляем запрос на поиск 'return' ----------------------------------
+        // отправляем запрос на поиск фильмов
         if (response.results.length === 0) {
           this.setState(() => {
             return {
@@ -131,14 +137,17 @@ export default class App extends Component {
         const total_pages = response.total_pages
         const movies = response.results // получаем тело ответа со списком фильмов
         let movieSlices = [] // Список для хранения отдельных даных
-        movies.forEach((element, index) => {
+        movies.forEach((element) => {
           movieSlices.push({
             // Заполняем этот список
-            id: index,
+            id: element.id,
             title: element.title,
             poster_path: MovieService.getImage(element.poster_path),
             description: element.overview,
             release_date: element.release_date,
+            rating: this.state.MovieDataRated.find((el) => el.idMovie === element.id)?.rate,
+            vote_average: element.vote_average.toFixed(1),
+            genre_ids: element.genre_ids,
           })
         })
         this.setState(() => {
@@ -150,29 +159,33 @@ export default class App extends Component {
           }
         })
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error(error)
         this.onError()
       })
   }
 
   getShortRatedMovies = () => {
-    console.log(this.guesSessId)
+    const { guesSessId } = this.state
+    if (!guesSessId) {
+      return
+    }
     this.listInfoMovies
-      .getMyRatedMovies(this.guesSessId)
+      .getMyRatedMovies(guesSessId)
       .then((res) => {
         const total_pages = res.total_pages
         const movies = res.results
-        console.log(res)
         const movieSlices = []
-        movies.forEach((element, index) => {
+        movies.forEach((element) => {
           movieSlices.push({
-            id: index,
+            id: element.id,
             title: element.title,
             poster_path: MovieService.getImage(element.poster_path),
             description: element.overview,
             release_date: element.release_date,
-            rate: element['vote_average'].tofixed(1),
-            myRate: element.rating,
+            vote_average: element['vote_average'].toFixed(1),
+            rating: element.rating,
+            genre_ids: element.genre_ids,
           })
         })
         this.setState(() => {
@@ -181,6 +194,7 @@ export default class App extends Component {
             loading: false,
             total_pages: total_pages,
             currentPage: 1,
+            islistRatedMovie: true,
           }
         })
       })
@@ -209,14 +223,21 @@ export default class App extends Component {
    * builds an array with JSX cards
    */
   buildMoviesLayout = () => {
-    const { MovieData } = this.state
+    const { MovieData, guesSessId, genres } = this.state
     return MovieData.slice(0, 6).map((movie, i) => (
       <CardMovie
+        idMovie={movie.id}
+        guest_session_id={guesSessId}
         key={i}
         title={movie.title}
         poster_path={movie.poster_path}
         description={this.truncateDescription(movie.description)}
         release_date={this.preparingDate(i)}
+        rating={movie.rating}
+        setLocalRate={this.setLocalRate}
+        vote_average={movie.vote_average}
+        genre_ids={movie.genre_ids}
+        genres={genres}
       />
     ))
   }
@@ -254,6 +275,7 @@ export default class App extends Component {
   }
 
   switchMenu = (key) => {
+    const { searchQuery, currentPage } = this.state
     if (key === '2') {
       this.setState({
         rated: true,
@@ -265,18 +287,36 @@ export default class App extends Component {
     } else {
       this.setState({
         rated: false,
+        islistRatedMovie: false,
       })
-      this.getMoviesFromServer(this.state.searchQuery, 1)
+      this.getMoviesFromServer(searchQuery, currentPage)
     }
   }
 
+  setLocalRate = (idMovie, rate, guest_session_id) => {
+    this.listInfoMovies
+      .setRate(idMovie, rate, guest_session_id)
+      .then(() => {
+        const newMovie = { idMovie, rate }
+        this.setState(({ MovieDataRated }) => {
+          const newData = [...MovieDataRated, newMovie]
+          return {
+            MovieDataRated: newData,
+          }
+        })
+      })
+      .catch((error) => {
+        console.error('Error setting rate:', error)
+      })
+  }
+
   render() {
-    const { error, total_pages, /*currentPage,*/ tabItem, rated, islistRatedMovie } = this.state
+    const { error, total_pages, tabItem, rated, islistRatedMovie, genres } = this.state
     if (error) {
       return <InternetDown />
     }
     return (
-      <Provider value={this.state.currentPage}>
+      <GenreContext.Provider value={genres}>
         <div className="app-content">
           <Selector item={tabItem} onChange={this.switchMenu} />
           {rated ? (
@@ -293,9 +333,13 @@ export default class App extends Component {
             />
           )}
           {this.selectView()}
-          <Leaf onChange={(page) => this.changePage(page)} total_pages={total_pages} /*currentPage={currentPage}*/ />
+          <Leaf
+            onChange={(page) => this.changePage(page)}
+            currentPage={this.state.currentPage}
+            total_pages={total_pages}
+          />
         </div>
-      </Provider>
+      </GenreContext.Provider>
     )
   }
 }

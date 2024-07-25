@@ -1,7 +1,7 @@
 import { Rate } from 'antd'
 
-// import { Consumer } from '../app'
-
-const RateMovie = () => <Rate allowHalf count={10} size="large" />
+const RateMovie = ({ setRated, rate }) => (
+  <Rate allowHalf count={10} size="large" onChange={setRated} defaultValue={rate} />
+)
 
 export default RateMovie
