@@ -7,6 +7,7 @@
 
 # testing
 /coverage
+/src/services/index.html
 
 # production
 /build

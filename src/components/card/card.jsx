@@ -4,9 +4,8 @@ import PropTypes from 'prop-types'
 
 import RateMovie from '../rate-movies'
 import GenreContext from '../../provider/provider'
-
 import './card.css'
-import no_image from './no_image.jpg'
+import no_image from '../../assets/no_image.jpg'
 
 const { Text } = Typography
 
@@ -20,7 +19,6 @@ const CardMovie = ({
   rating,
   setLocalRate,
   vote_average,
-  // genres,
   genre_ids,
 }) => {
   const [rate, setRated] = useState(0)

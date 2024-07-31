@@ -1,4 +1,4 @@
-import { Component } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { parse, format } from 'date-fns'
 import debounce from 'lodash/debounce'
 
@@ -16,77 +16,108 @@ import GenreContext from '../../provider/provider'
 
 import './app.css'
 
-export default class App extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      MovieData: [
-        {
-          id: 0,
-          title: '',
-          poster_path: '',
-          description: '',
-          release_date: '',
-        },
-      ],
-      MovieDataRated: [],
-      tabItem: [
-        {
-          label: 'Search',
-          key: '1',
-        },
-        {
-          label: 'Rated',
-          key: '2',
-        },
-      ],
-      rated: false,
-      loading: true,
-      error: false,
-      empty: false,
-      searchQuery: '',
-      total_pages: 1,
-      currentPage: 1,
-      islistRatedMovie: false,
-      guesSessId: null,
-      genres: null,
-    }
-    this.debouncedGetMovies = debounce(this.getMoviesFromServer, 1000)
-    this.listInfoMovies = new MovieService()
-  }
+const App = () => {
+  const [MovieData, setMovieData] = useState([])
+  const [MovieDataRated, setMovieDataRated] = useState([])
+  const [tabItem] = useState([
+    {
+      label: 'Search',
+      key: '1',
+    },
+    {
+      label: 'Rated',
+      key: '2',
+    },
+  ])
+  const [rated, setRated] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [empty, setEmpty] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [total_pages, setTotal_pages] = useState(1)
+  const [islistRatedMovie, setIslistRatedMovie] = useState(false)
+  const [guesSessId, setGuesSessId] = useState(null)
+  const [genres, setGenres] = useState(null)
 
-  /*
-   * Executes a request to the server, immediately after the component is rendered
-   */
-  componentDidMount() {
-    const movieName = this.state.searchQuery
-    this.listInfoMovies.getGuestSession().then((res) => {
-      this.setState(
-        {
-          guesSessId: res['guest_session_id'],
-        },
-        () => {
-          this.getMoviesFromServer(movieName)
-        }
-      )
-    })
-    this.listInfoMovies.getGenre().then((res) => {
-      this.setState({
-        genres: res.genres,
+  const movieService = new MovieService()
+
+  const getMoviesFromServer = useCallback(
+    (query = searchQuery, page = 1) => {
+      setLoading(true)
+      setError(false)
+      setEmpty(false)
+      movieService
+        .getResource(query, page)
+        .then((response) => {
+          // отправляем запрос на поиск фильмов
+          if (response.results.length === 0) {
+            setEmpty(true)
+            setLoading(false)
+            return
+          }
+          const total_pages = response.total_pages
+          const movies = response.results.map((element) => ({
+            id: element.id,
+            title: element.title,
+            poster_path: MovieService.getImage(element.poster_path),
+            description: element.overview,
+            release_date: element.release_date,
+            rating: MovieDataRated.find((el) => el.idMovie === element.id)?.rate,
+            vote_average: element.vote_average.toFixed(1),
+            genre_ids: element.genre_ids,
+          })) // получаем тело ответа со списком фильмов
+          setMovieData(movies)
+          setLoading(false)
+          setTotal_pages(total_pages)
+          setCurrentPage(page)
+        })
+        .catch((error) => {
+          console.error(error)
+          onError()
+        })
+    },
+    [searchQuery, MovieDataRated]
+  )
+
+  const debouncedGetMovies = useCallback(debounce(getMoviesFromServer, 1000), [getMoviesFromServer])
+
+  useEffect(() => {
+    movieService.getGuestSession().then((res) => {
+      setGuesSessId(res['guest_session_id'])
+      movieService.getGenre().then((res) => {
+        setGenres(res.genres)
       })
+      getMoviesFromServer(searchQuery)
     })
-  }
+    return () => {
+      debouncedGetMovies.cancel()
+    }
+  }, [])
 
-  componentWillUnmount() {
-    this.debouncedGetMovies.cancel()
-  }
+  useEffect(() => {
+    if (searchQuery) {
+      debouncedGetMovies(searchQuery)
+    }
+    return () => {
+      debouncedGetMovies.cancel()
+    }
+  }, [searchQuery])
+
+  // useEffect(() => {
+  //   console.log('rerender')
+  //   getMoviesFromServer(searchQuery)
+  //   return () => {
+  //     debouncedGetMovies.cancel()
+  //   }
+  // }, [searchQuery, getMoviesFromServer, debouncedGetMovies])
 
   /*
    * args: desc(string), maxLength(number)
    * return: string
    * trim text - desc by words up to maxLength characters
    */
-  truncateDescription(desc, maxLength = 180) {
+  const truncateDescription = (desc, maxLength = 180) => {
     if (desc.length <= maxLength) {
       return desc
     }
@@ -101,140 +132,59 @@ export default class App extends Component {
     return truncatedDesc + ' ...'
   }
 
-  /*
-   * configures the error state
-   */
-  onError = () => {
-    this.setState({
-      error: true,
-      loading: false,
-      empty: true,
-    })
+  const onError = () => {
+    setError(true)
+    setLoading(false)
+    setEmpty(true)
   }
 
-  /*
-   * args: query, page
-   * makes a request to the server, filters the data and updates the state of the component
-   */
-  getMoviesFromServer = (query = this.state.searchQuery, page = 1) => {
-    this.setState({
-      loading: true,
-      error: false,
-      empty: false,
-    })
-    this.listInfoMovies
-      .getResource(query, page)
-      .then((response) => {
-        // отправляем запрос на поиск фильмов
-        if (response.results.length === 0) {
-          this.setState(() => {
-            return {
-              empty: true,
-              loading: false,
-            }
-          })
-        }
-        const total_pages = response.total_pages
-        const movies = response.results // получаем тело ответа со списком фильмов
-        let movieSlices = [] // Список для хранения отдельных даных
-        movies.forEach((element) => {
-          movieSlices.push({
-            // Заполняем этот список
-            id: element.id,
-            title: element.title,
-            poster_path: MovieService.getImage(element.poster_path),
-            description: element.overview,
-            release_date: element.release_date,
-            rating: this.state.MovieDataRated.find((el) => el.idMovie === element.id)?.rate,
-            vote_average: element.vote_average.toFixed(1),
-            genre_ids: element.genre_ids,
-          })
-        })
-        this.setState(() => {
-          return {
-            MovieData: movieSlices,
-            loading: false,
-            total_pages: total_pages,
-            currentPage: page,
-          }
-        })
-      })
-      .catch((error) => {
-        console.error(error)
-        this.onError()
-      })
-  }
-
-  getShortRatedMovies = () => {
-    const { guesSessId } = this.state
+  const getShortRatedMovies = () => {
     if (!guesSessId) {
       return
     }
-    this.listInfoMovies
+    movieService
       .getMyRatedMovies(guesSessId)
       .then((res) => {
         const total_pages = res.total_pages
-        const movies = res.results
-        const movieSlices = []
-        movies.forEach((element) => {
-          movieSlices.push({
-            id: element.id,
-            title: element.title,
-            poster_path: MovieService.getImage(element.poster_path),
-            description: element.overview,
-            release_date: element.release_date,
-            vote_average: element['vote_average'].toFixed(1),
-            rating: element.rating,
-            genre_ids: element.genre_ids,
-          })
-        })
-        this.setState(() => {
-          return {
-            MovieData: movieSlices,
-            loading: false,
-            total_pages: total_pages,
-            currentPage: 1,
-            islistRatedMovie: true,
-          }
-        })
+        const movies = res.results.map((element) => ({
+          id: element.id,
+          title: element.title,
+          poster_path: MovieService.getImage(element.poster_path),
+          description: element.overview,
+          release_date: element.release_date,
+          vote_average: element['vote_average'].toFixed(1),
+          rating: element.rating,
+          genre_ids: element.genre_ids,
+        }))
+        setMovieData(movies)
+        setLoading(false)
+        setTotal_pages(total_pages)
+        setCurrentPage(1)
+        setIslistRatedMovie(true)
       })
-      .catch(() => {
-        return <ErrorAlert />
-      })
+      .catch(() => <ErrorAlert />)
   }
 
-  /*
-   * args: id(number)
-   * return: string of date(string)
-   * convert one string date format to another string date format
-   * expample: "2011-02-10" to "February 10, 2011"
-   */
-  preparingDate = (id) => {
-    const release = this.state.MovieData[id]?.release_date
+  const preparingDate = (id) => {
+    const release = MovieData[id]?.release_date
     if (release === '') {
-      return 'no date'
+      return 'no data'
     }
-    const newFormatOfDate = format(parse(release, 'yyyy-MM-dd', new Date()), 'MMMM d, yyyy')
-    return newFormatOfDate
+    return format(parse(release, 'yyyy-MM-dd', new Date()), 'MMMM d, yyyy')
   }
 
-  /*
-   * return: JSX array of CardMovie elements
-   * builds an array with JSX cards
-   */
-  buildMoviesLayout = () => {
-    const { MovieData, guesSessId, genres } = this.state
-    return MovieData.slice(0, 6).map((movie, i) => (
+  const buildMoviesLayout = () => {
+    return MovieData.map((movie, i) => (
       <CardMovie
         idMovie={movie.id}
         guest_session_id={guesSessId}
-        key={i}
+        key={movie.id}
         title={movie.title}
         poster_path={movie.poster_path}
-        description={this.truncateDescription(movie.description)}
-        release_date={this.preparingDate(i)}
+        description={truncateDescription(movie.description)}
+        release_date={preparingDate(i)}
         rating={movie.rating}
-        setLocalRate={this.setLocalRate}
+        setLocalRate={setLocalRate}
         vote_average={movie.vote_average}
         genre_ids={movie.genre_ids}
         genres={genres}
@@ -246,10 +196,9 @@ export default class App extends Component {
    * args: event
    * updates the query in the state of the component
    */
-  handleSearchChange = (event) => {
-    this.setState({ searchQuery: event.target.value }, () => {
-      this.debouncedGetMovies(this.state.searchQuery)
-    })
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value)
+    // debouncedGetMovies(searchQuery)
   }
 
   /*
@@ -257,89 +206,67 @@ export default class App extends Component {
    * return: JSX element
    * selects the layout to be called on the page
    */
-  selectView = () => {
-    const { loading, empty, MovieData } = this.state
+  const selectView = () => {
     if (loading) {
       return <LoadingPageView />
     } else if (empty || MovieData.length === 0) {
       return <DataEmpty />
     } else {
-      const listOfMovie = this.buildMoviesLayout()
-      return <MoviesView style={{ flex: 1 }} movies={listOfMovie} />
+      return <MoviesView style={{ flex: 1 }} movies={buildMoviesLayout()} />
     }
   }
 
-  changePage = (page) => {
-    const query = this.state.searchQuery
-    this.getMoviesFromServer(query, page)
+  const changePage = (page) => {
+    getMoviesFromServer(searchQuery, page)
   }
 
-  switchMenu = (key) => {
-    const { searchQuery, currentPage } = this.state
+  const switchMenu = (key) => {
     if (key === '2') {
-      this.setState({
-        rated: true,
-        MovieData: [],
-        total_pages: 1,
-        currentPage: 1,
-      })
-      this.getShortRatedMovies()
+      setRated(true)
+      setMovieData([])
+      setTotal_pages(1)
+      setCurrentPage(1)
+      getShortRatedMovies()
     } else {
-      this.setState({
-        rated: false,
-        islistRatedMovie: false,
-      })
-      this.getMoviesFromServer(searchQuery, currentPage)
+      setRated(false)
+      setIslistRatedMovie(false)
+      getMoviesFromServer(searchQuery, currentPage)
     }
   }
 
-  setLocalRate = (idMovie, rate, guest_session_id) => {
-    this.listInfoMovies
+  const setLocalRate = (idMovie, rate, guest_session_id) => {
+    movieService
       .setRate(idMovie, rate, guest_session_id)
       .then(() => {
         const newMovie = { idMovie, rate }
-        this.setState(({ MovieDataRated }) => {
-          const newData = [...MovieDataRated, newMovie]
-          return {
-            MovieDataRated: newData,
-          }
-        })
+        setMovieDataRated([...MovieDataRated, newMovie])
       })
       .catch((error) => {
         console.error('Error setting rate:', error)
       })
   }
 
-  render() {
-    const { error, total_pages, tabItem, rated, islistRatedMovie, genres } = this.state
-    if (error) {
-      return <InternetDown />
-    }
-    return (
-      <GenreContext.Provider value={genres}>
-        <div className="app-content">
-          <Selector item={tabItem} onChange={this.switchMenu} />
-          {rated ? (
-            islistRatedMovie ? (
-              <></>
-            ) : (
-              <ErrorAlert className="alert-message" />
-            )
-          ) : (
-            <Search
-              handleSearchChange={this.handleSearchChange}
-              value={this.state.searchQuery}
-              defaultValue={this.state.searchQuery}
-            />
-          )}
-          {this.selectView()}
-          <Leaf
-            onChange={(page) => this.changePage(page)}
-            currentPage={this.state.currentPage}
-            total_pages={total_pages}
-          />
-        </div>
-      </GenreContext.Provider>
-    )
+  if (error) {
+    return <InternetDown />
   }
+  return (
+    <GenreContext.Provider value={genres}>
+      <div className="app-content">
+        <Selector item={tabItem} onChange={switchMenu} />
+        {rated ? (
+          islistRatedMovie ? (
+            <></>
+          ) : (
+            <ErrorAlert className="alert-message" />
+          )
+        ) : (
+          <Search handleSearchChange={handleSearchChange} value={searchQuery} defaultValue={searchQuery} />
+        )}
+        {selectView()}
+        <Leaf onChange={changePage} currentPage={currentPage} total_pages={total_pages} />
+      </div>
+    </GenreContext.Provider>
+  )
 }
+
+export default App
