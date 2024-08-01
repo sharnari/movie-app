@@ -265,19 +265,12 @@ const App = () => {
     setError(false)
   }
 
-  // if (error) {
-  //   // return <InternetDown />
-  // }
   return (
     <GenreContext.Provider value={genres}>
       <div className="app-content">
         <Selector item={tabItem} onChange={switchMenu} />
         {rated ? (
-          errorMessage ? (
-            <></>
-          ) : (
-            <></>
-          )
+          <></>
         ) : (
           <Search handleSearchChange={handleSearchChange} value={searchQuery} defaultValue={searchQuery} />
         )}
