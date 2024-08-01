@@ -56,13 +56,21 @@ export default class MovieService {
       },
       body: JSON.stringify({ value: rate }),
     }
-    const res = await fetch(`${this.baseURL}movie/${idMovie}/rating?guest_session_id=${keyGuestSession}`, options)
+    const queryURL = `${this.baseURL}movie/${idMovie}/rating?guest_session_id=${keyGuestSession}`
+    const res = await fetch(queryURL, options)
+    if (!res.ok) {
+      throw new Error(`Could not fetch ${queryURL} received ${res.status}`)
+    }
     const returnData = await res.json()
     return returnData
   }
 
   async getGenre() {
-    const res = await fetch(`${this.baseURL}/genre/movie/list?language=en`, this.options)
+    const queryURL = `${this.baseURL}/genre/movie/list?language=en`
+    const res = await fetch(queryURL, this.options)
+    if (!res.ok) {
+      throw new Error(`Could not fetch ${queryURL} received ${res.status}`)
+    }
     const allGenres = await res.json()
     return allGenres
   }

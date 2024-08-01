@@ -54,6 +54,8 @@ const App = () => {
           if (response.results.length === 0) {
             setEmpty(true)
             setLoading(false)
+            setTotal_pages(1)
+            setCurrentPage(1)
             return
           }
           const total_pages = response.total_pages
@@ -83,13 +85,26 @@ const App = () => {
   const debouncedGetMovies = useCallback(debounce(getMoviesFromServer, 1000), [getMoviesFromServer])
 
   useEffect(() => {
-    movieService.getGuestSession().then((res) => {
-      setGuesSessId(res['guest_session_id'])
+    const savedGuestSessId = localStorage.getItem('guest_session_id')
+    if (savedGuestSessId) {
+      console.log(savedGuestSessId)
+      setGuesSessId(savedGuestSessId)
       movieService.getGenre().then((res) => {
         setGenres(res.genres)
       })
       getMoviesFromServer(searchQuery)
-    })
+    } else {
+      movieService.getGuestSession().then((res) => {
+        const newGuestSessId = res['guest_session_id']
+        setGuesSessId(newGuestSessId)
+        localStorage.setItem('guest_session_id', newGuestSessId)
+        console.log(res['guest_session_id'])
+        movieService.getGenre().then((res) => {
+          setGenres(res.genres)
+        })
+        getMoviesFromServer(searchQuery)
+      })
+    }
     return () => {
       debouncedGetMovies.cancel()
     }
@@ -103,14 +118,6 @@ const App = () => {
       debouncedGetMovies.cancel()
     }
   }, [searchQuery])
-
-  // useEffect(() => {
-  //   console.log('rerender')
-  //   getMoviesFromServer(searchQuery)
-  //   return () => {
-  //     debouncedGetMovies.cancel()
-  //   }
-  // }, [searchQuery, getMoviesFromServer, debouncedGetMovies])
 
   /*
    * args: desc(string), maxLength(number)
@@ -162,7 +169,7 @@ const App = () => {
         setCurrentPage(1)
         setIslistRatedMovie(true)
       })
-      .catch(() => <ErrorAlert />)
+      .catch(() => {})
   }
 
   const preparingDate = (id) => {
@@ -263,7 +270,7 @@ const App = () => {
           <Search handleSearchChange={handleSearchChange} value={searchQuery} defaultValue={searchQuery} />
         )}
         {selectView()}
-        <Leaf onChange={changePage} currentPage={currentPage} total_pages={total_pages} />
+        <Leaf onChange={changePage} currentPage={currentPage} total_pages={total_pages * 10} />
       </div>
     </GenreContext.Provider>
   )
