@@ -25,3 +25,4 @@ yarn-error.log*
 
 #my_scripts
 rebuild.sh
+./src/components/app/app-old.jsx

@@ -1,6 +1,7 @@
 .alert-message {
-  font-size: large;
-  margin: 0 auto;
-  width: 60%;
-  height: 5vh;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 300px;
 }

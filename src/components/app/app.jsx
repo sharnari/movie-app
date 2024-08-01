@@ -3,7 +3,6 @@ import { parse, format } from 'date-fns'
 import debounce from 'lodash/debounce'
 
 import CardMovie from '../card'
-import InternetDown from '../internet-down'
 import MovieService from '../../services/service'
 import DataEmpty from '../no-data'
 import Search from '../search'
@@ -36,9 +35,10 @@ const App = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [total_pages, setTotal_pages] = useState(1)
-  const [islistRatedMovie, setIslistRatedMovie] = useState(false)
+  // const [islistRatedMovie, setIslistRatedMovie] = useState(false)
   const [guesSessId, setGuesSessId] = useState(null)
   const [genres, setGenres] = useState(null)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const movieService = new MovieService()
 
@@ -75,8 +75,7 @@ const App = () => {
           setCurrentPage(page)
         })
         .catch((error) => {
-          console.error(error)
-          onError()
+          onError(error)
         })
     },
     [searchQuery, MovieDataRated]
@@ -87,23 +86,29 @@ const App = () => {
   useEffect(() => {
     const savedGuestSessId = localStorage.getItem('guest_session_id')
     if (savedGuestSessId) {
-      console.log(savedGuestSessId)
       setGuesSessId(savedGuestSessId)
-      movieService.getGenre().then((res) => {
-        setGenres(res.genres)
-      })
-      getMoviesFromServer(searchQuery)
-    } else {
-      movieService.getGuestSession().then((res) => {
-        const newGuestSessId = res['guest_session_id']
-        setGuesSessId(newGuestSessId)
-        localStorage.setItem('guest_session_id', newGuestSessId)
-        console.log(res['guest_session_id'])
-        movieService.getGenre().then((res) => {
+      movieService
+        .getGenre()
+        .then((res) => {
           setGenres(res.genres)
         })
-        getMoviesFromServer(searchQuery)
-      })
+        .catch(() => {
+          onError(error)
+        })
+      getMoviesFromServer(searchQuery)
+    } else {
+      movieService
+        .getGuestSession()
+        .then((res) => {
+          const newGuestSessId = res['guest_session_id']
+          setGuesSessId(newGuestSessId)
+          localStorage.setItem('guest_session_id', newGuestSessId)
+          movieService.getGenre().then((res) => {
+            setGenres(res.genres)
+          })
+          getMoviesFromServer(searchQuery)
+        })
+        .catch((error) => onError(error))
     }
     return () => {
       debouncedGetMovies.cancel()
@@ -139,10 +144,11 @@ const App = () => {
     return truncatedDesc + ' ...'
   }
 
-  const onError = () => {
+  const onError = (error) => {
     setError(true)
     setLoading(false)
     setEmpty(true)
+    setErrorMessage(error.message)
   }
 
   const getShortRatedMovies = () => {
@@ -167,9 +173,11 @@ const App = () => {
         setLoading(false)
         setTotal_pages(total_pages)
         setCurrentPage(1)
-        setIslistRatedMovie(true)
+        // setIslistRatedMovie(true)
       })
-      .catch(() => {})
+      .catch((error) => {
+        onError(error)
+      })
   }
 
   const preparingDate = (id) => {
@@ -236,7 +244,7 @@ const App = () => {
       getShortRatedMovies()
     } else {
       setRated(false)
-      setIslistRatedMovie(false)
+      // setIslistRatedMovie(false)
       getMoviesFromServer(searchQuery, currentPage)
     }
   }
@@ -249,28 +257,33 @@ const App = () => {
         setMovieDataRated([...MovieDataRated, newMovie])
       })
       .catch((error) => {
-        console.error('Error setting rate:', error)
+        onError(error)
       })
   }
 
-  if (error) {
-    return <InternetDown />
+  const handleAlertClose = () => {
+    setError(false)
   }
+
+  // if (error) {
+  //   // return <InternetDown />
+  // }
   return (
     <GenreContext.Provider value={genres}>
       <div className="app-content">
         <Selector item={tabItem} onChange={switchMenu} />
         {rated ? (
-          islistRatedMovie ? (
+          errorMessage ? (
             <></>
           ) : (
-            <ErrorAlert className="alert-message" />
+            <></>
           )
         ) : (
           <Search handleSearchChange={handleSearchChange} value={searchQuery} defaultValue={searchQuery} />
         )}
         {selectView()}
         <Leaf onChange={changePage} currentPage={currentPage} total_pages={total_pages * 10} />
+        {error && <ErrorAlert errorMessage={errorMessage} onClose={handleAlertClose} />}
       </div>
     </GenreContext.Provider>
   )
